@@ -21,21 +21,19 @@ const MASTER_HEADERS = [
 function doPost(e){
 
 const lock = LockService.getScriptLock();
-
-if(!lock.tryLock(10000)){
+if(!lock.tryLock(10000))
   return output_('ระบบกำลังประมวลผล กรุณาลองใหม่');
-}
 
 try{
 
 if(!e || !e.postData || !e.postData.contents)
-return output_('No POST data');
+  return output_('No POST data');
 
 let data={};
 try{
-data = JSON.parse(e.postData.contents);
+  data = JSON.parse(e.postData.contents);
 }catch(err){
-return output_('JSON ไม่ถูกต้อง');
+  return output_('JSON ไม่ถูกต้อง');
 }
 
 const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -46,25 +44,21 @@ const centerName = safe_(data.centerName || data.center);
 const communityName = safe_(data.communityName || data.community);
 
 if(!centerName || !communityName)
-return output_('กรุณาระบุชื่อศูนย์บริการและชุมชน');
+  return output_('กรุณาระบุชื่อศูนย์บริการและชุมชน');
 
 const addr = data.address || {};
 
-/************ FIX PET STRUCTURE ************/
+/************ PET STRUCTURE ************/
 let pets = [];
 
 if(Array.isArray(data.pets) && data.pets.length>0){
-pets = data.pets;
+  pets = data.pets;
 }
 else if(data.pet){
-pets = [data.pet];
+  pets = [data.pet];
 }
-else if(data.animalType || data.name || data.petPhotoBase64 || data.photo){
-pets = [data];
-}
-
-if(pets.length===0){
-pets = [{}];
+else{
+  pets = [data];
 }
 
 /************ SHEETS ************/
@@ -86,18 +80,10 @@ const addrNoClean = cleanName_(addr.addrNo || '');
 const roadClean = cleanName_(addr.road || '');
 
 let ownerFolderName = 'เจ้าของ_' + ownerNameClean;
+if(addrNoClean) ownerFolderName += '_บ้านเลขที่' + addrNoClean;
+if(roadClean) ownerFolderName += '_ถนน' + roadClean;
 
-if(addrNoClean){
-  ownerFolderName += '_บ้านเลขที่' + addrNoClean;
-}
-if(roadClean){
-  ownerFolderName += '_ถนน' + roadClean;
-}
-
-const ownerFolder = getOrCreateFolder_(
-communityFolder,
-ownerFolderName
-);
+const ownerFolder = getOrCreateFolder_(communityFolder,ownerFolderName);
 
 const ownerPhotoUrl = savePhotoSmart_(
 data.ownerPhotoBase64 || data.ownerPhoto || data.ownerImage,
@@ -111,16 +97,26 @@ pets.forEach((pet,index)=>{
 
 let petPhotoUrl='';
 
+/* รองรับ BASE64 */
 const petPhotoData =
 pet.petPhotoBase64 || pet.photoBase64 ||
 pet.image || pet.photo || '';
 
 if(petPhotoData){
-petPhotoUrl = savePhotoSmart_(
-petPhotoData,
-petMainFolder,
-'สัตว์_'+(pet.no||(index+1))+'_'+new Date().getTime()
-);
+  petPhotoUrl = savePhotoSmart_(
+    petPhotoData,
+    petMainFolder,
+    'สัตว์_'+(pet.no||(index+1))+'_'+new Date().getTime()
+  );
+}
+
+/* รองรับ URL */
+if(!petPhotoUrl && pet.imageUrl){
+  petPhotoUrl = saveImageFromUrl_(
+    pet.imageUrl,
+    petMainFolder,
+    'สัตว์_'+(index+1)
+  );
 }
 
 const rowObj = buildRowObject_(
@@ -160,49 +156,46 @@ return v.toString().trim();
 return '';
 }
 
-let animalType = pick_(pet.animalType,data.animalType)||'ไม่ระบุ';
+/************ ประเภทสัตว์ ************/
+let rawType = pick_(pet.animalType,data.animalType);
 let otherType = pick_(pet.otherAnimalType,data.otherAnimalType);
+let animalType='ไม่ระบุ';
 
-if(animalType==='อื่นๆ'&&otherType)
-animalType='อื่นๆ ('+otherType+')';
+if(rawType){
+  const t=rawType.trim();
+  if(['สุนัข','หมา','dog'].includes(t)) animalType='สุนัข';
+  else if(['แมว','cat'].includes(t)) animalType='แมว';
+  else if(['เป็ด'].includes(t)) animalType='เป็ด';
+  else if(['ไก่'].includes(t)) animalType='ไก่';
+  else if(['สุกร','หมู'].includes(t)) animalType='สุกร';
+  else if(['นก'].includes(t)) animalType='นก';
+  else if(['แพะ'].includes(t)) animalType='แพะ';
+  else if(['ม้า'].includes(t)) animalType='ม้า';
+  else if(['อื่นๆ'] .includes(t) && otherType)
+       animalType='อื่นๆ ('+otherType+')';
+  else animalType=t;
+}
 
-let rabiesStatus = pick_(
-pet.rabiesStatus,pet.rabies,pet.vaccineStatus,
-data.rabiesStatus,data.rabies
-)||'ไม่ระบุ';
-
-/************ FIX RAISING TYPE ************/
-let raisingTypeRaw = pick_(
-pet.raisingType,
-pet.raising,
-pet.raising_type,
-pet.raisingStyle,
-pet.careType,
-pet.care_type,
-data.raisingType,
-data.raising,
-data.raising_type,
-data.raisingStyle,
-data.careType,
-data.care_type
+/************ ลักษณะการเลี้ยง ************/
+let raisingRaw = pick_(
+pet.raisingType,pet.raising,pet.raising_type,
+data.raisingType,data.raising,data.raising_type
 );
 
-let raisingType = 'ไม่ระบุ';
+let raisingType='ไม่ระบุ';
 
-if(raisingTypeRaw === '1' || raisingTypeRaw === 'เลี้ยงในพื้นที่จำกัดตลอดเวลา'){
-  raisingType = 'เลี้ยงในพื้นที่จำกัดตลอดเวลา';
-}
-else if(raisingTypeRaw === '2' || raisingTypeRaw === 'เลี้ยงแบบปล่อยตลอดเวลา'){
-  raisingType = 'เลี้ยงแบบปล่อยตลอดเวลา';
-}
-else if(raisingTypeRaw === '3' || raisingTypeRaw === 'เลี้ยงในพื้นที่จำกัดบ้างเวลา'){
-  raisingType = 'เลี้ยงในพื้นที่จำกัดบ้างเวลา';
-}
-else if(raisingTypeRaw){
-  raisingType = raisingTypeRaw;
-}
+if(raisingRaw==='1') raisingType='เลี้ยงในพื้นที่จำกัดตลอดเวลา';
+else if(raisingRaw==='2') raisingType='เลี้ยงแบบปล่อยตลอดเวลา';
+else if(raisingRaw==='3') raisingType='เลี้ยงในพื้นที่จำกัดบ้างเวลา';
+else if(raisingRaw) raisingType=raisingRaw;
+
+/************ วัคซีนพิษสุนัขบ้า ************/
+let rabiesStatus = pick_(
+pet.rabiesStatus,pet.rabies,data.rabiesStatus
+)||'ไม่ระบุ';
 
 return {
+
 "timestamp":timestamp,
 "ปีงบประมาณ":year,
 "ศูนย์บริการ":centerName,
@@ -213,7 +206,6 @@ return {
 "จำนวนสัตว์ (อื่น)":safe_(data.otherAnimalQty),
 
 "ลำดับสัตว์":pick_(pet.no,(index+1)),
-
 "ชื่อสัตว์":pick_(pet.name)||'ไม่ระบุ',
 "เพศ":pick_(pet.gender)||'ไม่ระบุ',
 "อายุ (ปี)":pick_(pet.ageYear),
@@ -252,22 +244,16 @@ return {
 };
 }
 
-/******************** SAFE APPEND ********************/
+/******************** APPEND ********************/
 function appendSafe_(sheet,rowObj){
-
 autoAddMissingColumns_(sheet,rowObj);
-
 const headers = sheet.getRange(1,1,1,sheet.getLastColumn())
-.getValues()[0]
-.map(h=>h.toString().trim());
-
+.getValues()[0].map(h=>h.toString().trim());
 const row = headers.map(h=>rowObj[h]||'');
-
 if(row.join('').trim()!=='')
 sheet.appendRow(row);
 }
 
-/******************** HEADER ********************/
 function ensureHeaders_(sheet){
 if(sheet.getLastRow()===0)
 sheet.appendRow(MASTER_HEADERS);
@@ -275,9 +261,7 @@ sheet.appendRow(MASTER_HEADERS);
 
 function autoAddMissingColumns_(sheet,rowObj){
 let headers = sheet.getRange(1,1,1,sheet.getLastColumn())
-.getValues()[0]
-.map(h=>h.toString().trim());
-
+.getValues()[0].map(h=>h.toString().trim());
 Object.keys(rowObj).forEach(key=>{
 if(headers.indexOf(key)===-1){
 sheet.getRange(1,headers.length+1).setValue(key);
@@ -298,14 +282,11 @@ return s;
 }
 
 function getOrCreateFolder_(parent,name){
-
 name=(name||'Unknown').toString().trim();
-
 if(!parent){
 const it=DriveApp.getFoldersByName(name);
 return it.hasNext()?it.next():DriveApp.createFolder(name);
 }
-
 const it=parent.getFoldersByName(name);
 return it.hasNext()?it.next():parent.createFolder(name);
 }
@@ -317,24 +298,31 @@ return (text||'').toString().trim()
 }
 
 function savePhotoSmart_(base64Data,folder,fileName){
-
 if(!base64Data||typeof base64Data!=='string')
 return '';
-
 try{
 if(base64Data.indexOf('base64,')!==-1)
 base64Data=base64Data.split('base64,')[1];
-
 const bytes=Utilities.base64Decode(base64Data);
 const blob=Utilities.newBlob(bytes,'image/jpeg',fileName+'.jpg');
 const file=folder.createFile(blob);
-
 file.setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);
-
 return file.getUrl();
-
 }catch(err){
 Logger.log(err);
+return '';
+}
+}
+
+function saveImageFromUrl_(url,folder,fileName){
+try{
+const response = UrlFetchApp.fetch(url);
+const blob = response.getBlob();
+const file = folder.createFile(blob).setName(fileName+'.jpg');
+file.setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);
+return file.getUrl();
+}catch(e){
+Logger.log(e);
 return '';
 }
 }
