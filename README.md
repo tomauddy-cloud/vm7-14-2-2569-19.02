@@ -99,8 +99,31 @@ let petPhotoUrl='';
 
 /* รองรับ BASE64 */
 const petPhotoData =
-pet.petPhotoBase64 || pet.photoBase64 ||
-pet.image || pet.photo || '';
+pet.petPhotoBase64 ||
+pet.photoBase64 ||
+pet.image ||
+pet.photo ||
+
+/* ปกติ */
+pet["รูปภาพ"] ||
+pet["รูปสัตว์"] ||
+pet["รูปภาพสัตว์เลี้ยง"] ||
+
+/* กรณี อื่น ๆ โปรดระบุ */
+pet["รูปภาพสัตว์เลี้ยง (อื่นๆโปรดระบุ)"] ||
+pet["รูปภาพสัตว์เลี้ยง (อื่น ๆ โปรดระบุ)"] ||
+pet["รูปภาพอื่นๆ"] ||
+
+/* fallback จาก root */
+data["รูปภาพ"] ||
+data["รูปสัตว์"] ||
+data["รูปภาพสัตว์เลี้ยง"] ||
+data["รูปภาพสัตว์เลี้ยง (อื่นๆโปรดระบุ)"] ||
+data["รูปภาพสัตว์เลี้ยง (อื่น ๆ โปรดระบุ)"] ||
+data["รูปภาพอื่นๆ"] ||
+
+'';
+
 
 if(petPhotoData){
   petPhotoUrl = savePhotoSmart_(
@@ -148,17 +171,26 @@ data,pet,index,addr,
 ownerPhotoUrl,petPhotoUrl){
 
 function pick_(){
-for(let i=0;i<arguments.length;i++){
-const v=arguments[i];
-if(v!==undefined&&v!==null&&v!=='')
-return v.toString().trim();
-}
-return '';
+  for(let i=0;i<arguments.length;i++){
+    const v=arguments[i];
+    if(v!==undefined && v!==null && v!=='')
+      return v.toString().trim();
+  }
+  return '';
 }
 
 /************ ประเภทสัตว์ ************/
 let rawType = pick_(pet.animalType,data.animalType);
-let otherType = pick_(pet.otherAnimalType,data.otherAnimalType);
+
+let otherType = pick_(
+  pet.otherAnimalType,
+  data.otherAnimalType,
+  pet["ชนิดสัตว์ (อื่น)"],
+  data["ชนิดสัตว์ (อื่น)"],
+  pet["อื่นๆโปรดระบุ"],
+  data["อื่นๆโปรดระบุ"]
+);
+
 let animalType='ไม่ระบุ';
 
 if(rawType){
@@ -171,28 +203,69 @@ if(rawType){
   else if(['นก'].includes(t)) animalType='นก';
   else if(['แพะ'].includes(t)) animalType='แพะ';
   else if(['ม้า'].includes(t)) animalType='ม้า';
-  else if(['อื่นๆ'] .includes(t) && otherType)
+  else if(['อื่นๆ'].includes(t) && otherType)
        animalType='อื่นๆ ('+otherType+')';
   else animalType=t;
 }
 
 /************ ลักษณะการเลี้ยง ************/
-let raisingRaw = pick_(
-pet.raisingType,pet.raising,pet.raising_type,
-data.raisingType,data.raising,data.raising_type
-);
+let raisingType = pick_(
 
-let raisingType='ไม่ระบุ';
+  pet["ลักษณะการเลี้ยง"],
+  data["ลักษณะการเลี้ยง"],
 
-if(raisingRaw==='1') raisingType='เลี้ยงในพื้นที่จำกัดตลอดเวลา';
-else if(raisingRaw==='2') raisingType='เลี้ยงแบบปล่อยตลอดเวลา';
-else if(raisingRaw==='3') raisingType='เลี้ยงในพื้นที่จำกัดบ้างเวลา';
-else if(raisingRaw) raisingType=raisingRaw;
+  pet["วิธีการเลี้ยง"],
+  data["วิธีการเลี้ยง"],
 
-/************ วัคซีนพิษสุนัขบ้า ************/
+  pet.raisingStyle,
+  data.raisingStyle,
+
+  pet.raisingType,
+  data.raisingType,
+
+  pet.raising,
+  data.raising,
+
+  pet.raising_type,
+  data.raising_type
+
+) || 'ไม่ระบุ';
+
+
+/************ พื้นที่การเลี้ยง ************/
+let raisingArea = pick_(
+
+  pet["พื้นที่การเลี้ยง"],
+  data["พื้นที่การเลี้ยง"],
+
+  pet.raisingArea,
+  data.raisingArea,
+
+  pet.raising_area,
+  data.raising_area
+
+) || 'ไม่ระบุ';
+
+
+/************ สถานที่เลี้ยง ************/
+let raisingLocation = pick_(
+
+  pet["สถานที่เลี้ยง"],
+  data["สถานที่เลี้ยง"],
+
+  pet.raisingLocation,
+  data.raisingLocation
+
+) || 'ไม่ระบุ';
+
+
+/************ วัคซีน ************/
 let rabiesStatus = pick_(
-pet.rabiesStatus,pet.rabies,data.rabiesStatus
-)||'ไม่ระบุ';
+  pet.rabiesStatus,
+  pet.rabies,
+  data.rabiesStatus
+) || 'ไม่ระบุ';
+
 
 return {
 
@@ -221,8 +294,8 @@ return {
 "สัตวแพทย์ผู้ฉีดวัคซีน":pick_(pet.rabiesVet),
 
 "ลักษณะการเลี้ยง":raisingType,
-"สถานที่เลี้ยง":pick_(pet.raisingLocation,data.raisingLocation),
-"พื้นที่การเลี้ยง":pick_(pet.raisingArea,data.raisingArea),
+"สถานที่เลี้ยง":raisingLocation,
+"พื้นที่การเลี้ยง":raisingArea,
 
 "ชื่อเจ้าของสัตว์":pick_(data.ownerName)||'ไม่ระบุ',
 "เลขบัตรประชาชน":pick_(data.citizenId),
@@ -297,19 +370,47 @@ return (text||'').toString().trim()
 .replace(/[\\/:*?"<>|]/g,'');
 }
 
+
 function savePhotoSmart_(base64Data,folder,fileName){
 if(!base64Data||typeof base64Data!=='string')
 return '';
+
 try{
-if(base64Data.indexOf('base64,')!==-1)
-base64Data=base64Data.split('base64,')[1];
-const bytes=Utilities.base64Decode(base64Data);
-const blob=Utilities.newBlob(bytes,'image/jpeg',fileName+'.jpg');
-const file=folder.createFile(blob);
+
+let contentType = 'image/jpeg';
+
+/* ตัดช่องว่างหัวท้าย */
+base64Data = base64Data.trim();
+
+/* ถ้ามี header data:image/... */
+if(base64Data.indexOf('data:')===0){
+
+  const match = base64Data.match(/^data:(.*?);base64,/);
+  if(match && match[1]){
+    contentType = match[1];
+  }
+
+  base64Data = base64Data.split('base64,')[1];
+}
+
+/* ลบ newline และ space */
+base64Data = base64Data.replace(/\s/g,'');
+
+if(base64Data.length < 100){
+  Logger.log("BASE64 TOO SHORT");
+  return '';
+}
+
+const bytes = Utilities.base64Decode(base64Data);
+const blob = Utilities.newBlob(bytes, contentType, fileName);
+const file = folder.createFile(blob);
+
 file.setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);
+
 return file.getUrl();
+
 }catch(err){
-Logger.log(err);
+Logger.log("SAVE ERROR: "+err);
 return '';
 }
 }
