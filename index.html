@@ -534,7 +534,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <script>
 (function () {
 
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbysEAIFqDRB72Qt75p4MDMqaIWOqeEX-fGVG9Q2G4hVjDbLgtpHX6SHAhT2VKr-cHWD/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzn9cJBSRQGotsFe28Yqt6P8g1T9G9KXxCt9m9XzBbN45WJk6P1BsV7rz47twr1jLFO/exec";
 
   const form = document.getElementById('surveyForm');
   if (!form) return;
@@ -1763,7 +1763,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
 })();
 </script>
- 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  const sub = document.getElementById('subdistrict');
+  const dis = document.getElementById('district');
+  const pro = document.getElementById('province');
+
+  if (sub) {
+    sub.value = 'ในเมือง';
+    sub.readOnly = true;
+    sub.style.background = '#eee';
+  }
+
+  if (dis) {
+    dis.value = 'เมือง';
+    dis.readOnly = true;
+    dis.style.background = '#eee';
+  }
+
+  if (pro) {
+    pro.value = 'อุบลราชธานี';
+    pro.readOnly = true;
+    pro.style.background = '#eee';
+  }
+
+});
+</script>
 </body>
 
 </html>
