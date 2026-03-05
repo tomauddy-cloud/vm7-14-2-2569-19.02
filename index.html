@@ -1790,10 +1790,177 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+<script>
+
+/* ==============================
+1. จำกัดการกรอกตัวเลข อายุ
+============================== */
+
+document.addEventListener("input",function(e){
+
+if(e.target.classList.contains("ageYear") || 
+   e.target.classList.contains("ageMonth")){
+
+   e.target.value = e.target.value.replace(/[^0-9]/g,'')
+
+}
+
+})
+
+
+/* ==============================
+2. ไทย + อังกฤษ เท่านั้น
+============================== */
+
+function allowThaiEng(input){
+
+input.addEventListener("input",function(){
+
+this.value = this.value.replace(/[^a-zA-Zก-๙\s]/g,'')
+
+})
+
+}
+
+document.addEventListener("DOMContentLoaded",function(){
+
+const owner = document.getElementById("recorderName")
+
+if(owner) allowThaiEng(owner)
+
+})
+
+
+/* ==============================
+3. แก้ประเภทสัตว์
+============================== */
+
+document.addEventListener("DOMContentLoaded",function(){
+
+const animalType = document.getElementById("animalType")
+
+animalType.innerHTML = `
+<option value="">-- เลือก --</option>
+<option>ไม่มี</option>
+<option>สุนัขมีเจ้าของ</option>
+<option>แมวมีเจ้าของ</option>
+<option>สุนัขไม่มีเจ้าของ</option>
+<option>แมวไม่มีเจ้าของ</option>
+<option>โค</option>
+<option>เป็ด</option>
+<option>ไก่</option>
+<option>สุกร</option>
+<option>นก</option>
+<option>แพะ</option>
+<option>ม้า</option>
+<option value="อื่นๆโปรดระบุ">อื่น ๆ โปรดระบุ</option>
+`
+
+})
+
+
+/* ==============================
+4. บังคับ/ไม่บังคับข้อมูล
+============================== */
+
+document.addEventListener("change",function(e){
+
+if(e.target.id === "animalType"){
+
+const type = e.target.value
+
+const pets = document.querySelectorAll(".pet-card")
+
+pets.forEach(card=>{
+
+const name = card.querySelector(".petName")
+const gender = card.querySelector(".gender")
+const ageYear = card.querySelector(".ageYear")
+const ageMonth = card.querySelector(".ageMonth")
+const color = card.querySelector(".color")
+
+if(type === "สุนัขไม่มีเจ้าของ" || type === "แมวไม่มีเจ้าของ"){
+
+name.required=false
+gender.required=false
+ageYear.required=false
+ageMonth.required=false
+color.required=false
+
+}else{
+
+name.required=true
+gender.required=true
+ageYear.required=true
+ageMonth.required=true
+color.required=true
+
+}
+
+})
+
+}
+
+})
+
+/* ==============================
+6. บังคับอัพรูป (กรณีไม่มีเจ้าของ)
+============================== */
+
+document.addEventListener("change",function(e){
+
+if(e.target.id==="animalType"){
+
+const type = e.target.value
+const photo = document.getElementById("animalPhoto")
+
+if(!photo) return
+
+if(type==="สุนัขไม่มีเจ้าของ" || type==="แมวไม่มีเจ้าของ"){
+
+photo.required = true
+
+}else{
+
+photo.required = false
+
+}
+
+}
+
+})
+
+</script>
+<script>
+
+document.addEventListener("change",function(e){
+
+if(e.target.id === "animalType"){
+
+const type = e.target.value
+
+const photo = document.querySelector('input[type="file"]')
+
+if(!photo) return
+
+if(type === "สุนัขไม่มีเจ้าของ" || type === "แมวไม่มีเจ้าของ"){
+
+photo.required = true
+
+}else{
+
+photo.required = false
+
+}
+
+}
+
+})
+
+</script>
 </body>
 
 </html>
-
 
 
 
