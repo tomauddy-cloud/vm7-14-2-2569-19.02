@@ -175,8 +175,15 @@ function toggleRabiesDate(selectEl){
 function toggleContraceptiveDate(sel){
   const card = sel.closest('.pet-card');
   const date = card.querySelector('.contraceptiveDate');
-  if(sel.value==='ฉีดยาคุม'){ date.style.display='block'; date.required=true; }
-  else { date.style.display='none'; date.required=false; date.value=''; }
+
+  if(sel.value==='ฉีดยาคุม'){
+    date.style.display='block';
+    date.required=false;   // ⭐ ไม่บังคับกรอก
+  }else{
+    date.style.display='none';
+    date.required=false;
+    date.value='';
+  }
 }
 
 function createPetCard(no) {
@@ -952,15 +959,14 @@ document.addEventListener('submit', function (e) {
         }
       }
 
-      if (v('.sterilization') === 'ฉีดยาคุม') {
-        if (!v('.contraceptiveDate') ||
-            !card.querySelector('.contraceptiveVetBox .vetSource')?.value) {
-          alert(`สัตว์ตัวที่ ${no} : กรุณากรอกข้อมูลฉีดยาคุมให้ครบ`);
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          return;
-        }
-      }
+     if (v('.sterilization') === 'ฉีดยาคุม') {
+  if (!card.querySelector('.contraceptiveVetBox .vetSource')?.value) {
+    alert(`สัตว์ตัวที่ ${no} : กรุณาเลือกผู้ฉีดยาคุม`);
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return;
+  }
+}
     }
   }
 
@@ -1961,6 +1967,7 @@ photo.required = false
 </body>
 
 </html>
+
 
 
 
